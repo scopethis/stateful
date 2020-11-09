@@ -37,7 +37,9 @@ export const toggle = (initialState) => {
       context: {
         // position: "neutral"
         ...initialState,
-        position: initialState.selected ? 'active' : 'inactive',
+        position: initialState.selected 
+          ? 'active' 
+          : initialState.selected === undefined ?  'neutral' : 'inactive',
       },
 
       states: {

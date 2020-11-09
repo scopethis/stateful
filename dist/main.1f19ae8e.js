@@ -14095,7 +14095,7 @@ var toggle = function toggle(initialState) {
       id: "toggle",
       initial: initialState.selected ? 'active' : 'inactive',
       context: _objectSpread(_objectSpread({}, initialState), {}, {
-        position: initialState.selected ? 'active' : 'inactive'
+        position: initialState.selected ? 'active' : initialState.selected === undefined ? 'neutral' : 'inactive'
       }),
       states: {
         active: _objectSpread({
@@ -14682,7 +14682,7 @@ var _default = {
 
     this.check = (0, _check.makeCheckState)({
       id: this.id,
-      selected: true
+      selected: undefined
     });
     this.check.onTransition(function (state) {
       _this.style = state.context.position;
@@ -14800,6 +14800,28 @@ var _toggle = require("../../toggle");
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 var _default = {
   props: {
     id: {
@@ -14807,17 +14829,24 @@ var _default = {
       required: true
     }
   },
+  data: function data() {
+    return {
+      style: ''
+    };
+  },
   beforeMount: function beforeMount() {
     var _this = this;
 
     this.toggle = (0, _toggle.makeToggleState)({
       id: this.id,
-      selected: true
+      selected: undefined
     });
     this.toggle.onTransition(function (state) {
       _this.style = state.context.position;
 
       _this.$emit('change', state.context);
+
+      console.log(state.context);
     });
   }
 };
@@ -14834,20 +14863,20 @@ exports.default = _default;
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _vm._m(0)
+  return _c("div", { staticClass: "container", class: _vm.style }, [
+    _c("div", {
+      staticClass: "base",
+      on: {
+        click: function() {
+          return _vm.toggle.send("TOGGLE")
+        }
+      }
+    }),
+    _vm._v(" "),
+    _c("span", { staticClass: "indicator" })
+  ])
 }
-var staticRenderFns = [
-  function() {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
-    return _c("div", { staticClass: "container" }, [
-      _c("div", { staticClass: "base" }),
-      _vm._v(" "),
-      _c("span", { staticClass: "indicator" })
-    ])
-  }
-]
+var staticRenderFns = []
 render._withStripped = true
 
           return {

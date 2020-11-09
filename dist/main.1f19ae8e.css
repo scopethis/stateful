@@ -29,7 +29,7 @@
 }
 .active[data-v-2cea0c] {
   border: 1px solid #414141;
-  background-color: #414141;
+  background-color: green;
 }
 .inactive[data-v-2cea0c] {
   border: 1px solid #414141;
@@ -45,6 +45,18 @@
   background-color: #414141;
   border-radius: 20px;
 }
+.active .base[data-v-b8c77d] {
+  background-color: green;
+}
+.active .indicator[data-v-b8c77d] {
+  left: 20px;
+}
+.inactive .base[data-v-b8c77d] {
+  background-color: #414141;
+}
+.inactive .indicator[data-v-b8c77d] {
+  left: 0;
+}
 .indicator[data-v-b8c77d] {
   display: block;
   width: 16px;
@@ -57,4 +69,5 @@
   margin-left: 2px;
   margin-right: 2px;
   margin-top: 2px;
+  transition: left 0.2s;
 }

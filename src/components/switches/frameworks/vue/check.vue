@@ -47,7 +47,7 @@
 
   .active {
     border: 1px solid #414141;
-    background-color: #414141;
+    background-color: green;
   }
 
   .inactive {
@@ -82,7 +82,7 @@ export default {
   beforeMount() {
     this.check = makeCheckState({
       id: this.id,
-      selected: true
+      selected: undefined
     })
     this.check.onTransition((state) => {
       this.style = state.context.position
