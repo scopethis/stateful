@@ -1,0 +1,12 @@
+.off[data-v-f205b4] {
+  background: lightgreen;
+}
+.over[data-v-f205b4] {
+  background: lightpink;
+}
+.down[data-v-f205b4] {
+  background: red;
+}
+.clicked[data-v-f205b4] {
+  background: lightgreen;
+}

@@ -2,7 +2,7 @@ import { Machine } from "xstate";
 
 const pressable = (context, event, conditionData) => {
   const states = conditionData.state.toStrings();
-  const hasBeenHoveredOver = states.toString().indexOf("hovered") > -1;
+  const hasBeenHoveredOver = states.toString().indexOf("over") > -1;
   return hasBeenHoveredOver;
 };
 
@@ -15,9 +15,15 @@ export const base = (initialState) => {
       states: {
         released: {
           on: {
-            PRESSED: [
+            DOWN: [
               {
-                target: "pressed",
+                target: "down",
+                cond: pressable
+              },
+            ],
+            CLICK: [
+              {
+                target: "click",
                 cond: pressable
               },
               {
@@ -26,8 +32,11 @@ export const base = (initialState) => {
             ]
           }
         },
-        pressed: {
+        click: {
+        },
+        down: {
           on: {
+            CLICK: "released",
             RELEASED: "released"
           }
         }

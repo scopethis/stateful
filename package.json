@@ -3,10 +3,19 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {},
-  "devDependencies": {
-    "xstate": "^4.14.0",
-    "parcel-bundler": "^1.12.4"
+  "scripts": {
+    "dev": "parcel serve"
   },
-  "keywords": []
+  "devDependencies": {
+    "@vue/component-compiler-utils": "^3.2.0",
+    "parcel-bundler": "^1.12.4",
+    "typescript": "^4.0.5",
+    "vue": "^2.6.12",
+    "vue-template-compiler": "^2.6.12",
+    "xstate": "^4.14.0"
+  },
+  "keywords": [],
+  "dependencies": {
+    "vue-hot-reload-api": "^2.3.4"
+  }
 }

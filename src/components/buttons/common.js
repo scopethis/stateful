@@ -1,21 +1,53 @@
-import { Machine } from "xstate";
+import { Machine, interpret } from "xstate";
 import { base } from "./base";
 
 export const common = (initialState) => {
   return {
     config: {
-      id: "standard",
-      initial: "away",
+      id: "common",
+      initial: initialState,
 
       states: {
-        away: {
+        over: {
           on: {
-            HOVERED: "hovered.released"
+            DOWN: "down",
+            DISABLED: "disabled",
+            OFF: "off",
+            CLICKED: "clicked"
           },
-          ...base().config
         },
-        hovered: {
-          ...base().config
+        down: {
+          on: {
+            DISABLED: "disabled",
+            CLICKED: "clicked",
+            OFF: "off",
+          },
+        },
+        clicked: {
+          on: {
+            DISABLED: "disabled",
+            OVER: "over",
+            OFF: "off",
+            DOWN: "down"
+          }
+        },
+        disabled: {
+          on: {
+            ENABLED: "enabled"
+          }
+        },
+        enabled: {
+          on: {
+            OVER: "over",
+            OFF: "off",
+            CLICKED: "clicked"
+          }
+        },
+        off: {
+          on: {
+            DISABLED: "disabled",
+            OVER: "over"
+          },
         }
       }
     },
@@ -29,3 +61,7 @@ export const makeCommonButton = (initialState) => {
   const state = common(initialState);
   return Machine(state.config, state.options);
 };
+
+export const makeButtonState = (initialState) => {
+  return interpret(makeCommonButton(initialState)).start()
+}
