@@ -1,4 +1,4 @@
-import { Machine } from "xstate";
+import { Machine, interpret } from "xstate";
 import { toggle } from "./toggle";
 import { common } from "../buttons/common";
 
@@ -6,24 +6,25 @@ export const check = (initialState) => {
   return {
     config: {
       id: "check",
-      initial: "inactive",
+      initial: initialState.selected ? 'active' : 'inactive',
 
       context: {
-        ...initialState
+        ...initialState,
+        position: initialState.selected ? 'active' : 'inactive',
       },
 
       states: {
         active: {
           on: {
-            TOGGLE: { target: "inactive.hovered", actions: "moveToInActive" },
-            OFF: { target: "inactive.hovered", actions: "moveToInActive" }
+            TOGGLE: { target: "inactive.over", actions: "moveToInActive" },
+            OFF: { target: "inactive.over", actions: "moveToInActive" }
           },
           ...common().config
         },
         inactive: {
           on: {
-            TOGGLE: { target: "active.hovered", actions: "moveToActive" },
-            ON: { target: "active.hovered", actions: "moveToActive" }
+            TOGGLE: { target: "active.over", actions: "moveToActive" },
+            ON: { target: "active.over", actions: "moveToActive" }
           },
           ...common().config
         }
@@ -33,8 +34,8 @@ export const check = (initialState) => {
     options: {
       ...common().options,
       actions: {
-        moveToActive: toggle().options.actions.moveToActive,
-        moveToInActive: toggle().options.actions.moveToInActive
+        moveToActive: toggle(initialState).options.actions.moveToActive,
+        moveToInActive: toggle(initialState).options.actions.moveToInActive
       }
     }
   };
@@ -44,3 +45,7 @@ export const makeCheck = (initialState) => {
   const state = check(initialState);
   return Machine(state.config, state.options);
 };
+
+export const makeCheckState = (initialState) => {
+  return interpret(makeCheck(initialState)).start()
+}

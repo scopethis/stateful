@@ -1,12 +1,60 @@
-.off[data-v-f205b4] {
-  background: lightgreen;
+.check[data-v-2cea0c] {
+  border: 1px solid lightgray;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  position: relative;
 }
-.over[data-v-f205b4] {
-  background: lightpink;
+.check .inner[data-v-2cea0c] {
+  pointer-events: none;
+  width: 14px;
+  height: 14px;
+  border: 3px solid white;
+  position: absolute;
+  top: 0;
+  left: 0;
 }
-.down[data-v-f205b4] {
-  background: red;
+.check [type=checkbox][data-v-2cea0c] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
 }
-.clicked[data-v-f205b4] {
-  background: lightgreen;
+.check [type=checkbox][data-v-2cea0c]:focus {
+  outline: none;
+}
+.label[data-v-2cea0c] {
+  margin-left: 10px;
+}
+.active[data-v-2cea0c] {
+  border: 1px solid #414141;
+  background-color: #414141;
+}
+.inactive[data-v-2cea0c] {
+  border: 1px solid #414141;
+  background-color: #ffffff;
+}
+.container[data-v-b8c77d] {
+  position: relative;
+  width: 40px;
+}
+.base[data-v-b8c77d] {
+  width: inherit;
+  height: 20px;
+  background-color: #414141;
+  border-radius: 20px;
+}
+.indicator[data-v-b8c77d] {
+  display: block;
+  width: 16px;
+  height: 16px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin-left: 2px;
+  margin-right: 2px;
+  margin-top: 2px;
 }

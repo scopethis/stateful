@@ -117,7 +117,7 @@ parcelRequire = (function (modules, cache, entry, globalName) {
   }
 
   return newRequire;
-})({"../../../../../node_modules/vue/dist/vue.runtime.esm.js":[function(require,module,exports) {
+})({"../../../../../../node_modules/vue/dist/vue.runtime.esm.js":[function(require,module,exports) {
 var global = arguments[3];
 "use strict";
 
@@ -8542,371 +8542,7 @@ if (inBrowser) {
 
 var _default = Vue;
 exports.default = _default;
-},{}],"../../../../../node_modules/vue-hot-reload-api/dist/index.js":[function(require,module,exports) {
-var Vue // late bind
-var version
-var map = Object.create(null)
-if (typeof window !== 'undefined') {
-  window.__VUE_HOT_MAP__ = map
-}
-var installed = false
-var isBrowserify = false
-var initHookName = 'beforeCreate'
-
-exports.install = function (vue, browserify) {
-  if (installed) { return }
-  installed = true
-
-  Vue = vue.__esModule ? vue.default : vue
-  version = Vue.version.split('.').map(Number)
-  isBrowserify = browserify
-
-  // compat with < 2.0.0-alpha.7
-  if (Vue.config._lifecycleHooks.indexOf('init') > -1) {
-    initHookName = 'init'
-  }
-
-  exports.compatible = version[0] >= 2
-  if (!exports.compatible) {
-    console.warn(
-      '[HMR] You are using a version of vue-hot-reload-api that is ' +
-        'only compatible with Vue.js core ^2.0.0.'
-    )
-    return
-  }
-}
-
-/**
- * Create a record for a hot module, which keeps track of its constructor
- * and instances
- *
- * @param {String} id
- * @param {Object} options
- */
-
-exports.createRecord = function (id, options) {
-  if(map[id]) { return }
-
-  var Ctor = null
-  if (typeof options === 'function') {
-    Ctor = options
-    options = Ctor.options
-  }
-  makeOptionsHot(id, options)
-  map[id] = {
-    Ctor: Ctor,
-    options: options,
-    instances: []
-  }
-}
-
-/**
- * Check if module is recorded
- *
- * @param {String} id
- */
-
-exports.isRecorded = function (id) {
-  return typeof map[id] !== 'undefined'
-}
-
-/**
- * Make a Component options object hot.
- *
- * @param {String} id
- * @param {Object} options
- */
-
-function makeOptionsHot(id, options) {
-  if (options.functional) {
-    var render = options.render
-    options.render = function (h, ctx) {
-      var instances = map[id].instances
-      if (ctx && instances.indexOf(ctx.parent) < 0) {
-        instances.push(ctx.parent)
-      }
-      return render(h, ctx)
-    }
-  } else {
-    injectHook(options, initHookName, function() {
-      var record = map[id]
-      if (!record.Ctor) {
-        record.Ctor = this.constructor
-      }
-      record.instances.push(this)
-    })
-    injectHook(options, 'beforeDestroy', function() {
-      var instances = map[id].instances
-      instances.splice(instances.indexOf(this), 1)
-    })
-  }
-}
-
-/**
- * Inject a hook to a hot reloadable component so that
- * we can keep track of it.
- *
- * @param {Object} options
- * @param {String} name
- * @param {Function} hook
- */
-
-function injectHook(options, name, hook) {
-  var existing = options[name]
-  options[name] = existing
-    ? Array.isArray(existing) ? existing.concat(hook) : [existing, hook]
-    : [hook]
-}
-
-function tryWrap(fn) {
-  return function (id, arg) {
-    try {
-      fn(id, arg)
-    } catch (e) {
-      console.error(e)
-      console.warn(
-        'Something went wrong during Vue component hot-reload. Full reload required.'
-      )
-    }
-  }
-}
-
-function updateOptions (oldOptions, newOptions) {
-  for (var key in oldOptions) {
-    if (!(key in newOptions)) {
-      delete oldOptions[key]
-    }
-  }
-  for (var key$1 in newOptions) {
-    oldOptions[key$1] = newOptions[key$1]
-  }
-}
-
-exports.rerender = tryWrap(function (id, options) {
-  var record = map[id]
-  if (!options) {
-    record.instances.slice().forEach(function (instance) {
-      instance.$forceUpdate()
-    })
-    return
-  }
-  if (typeof options === 'function') {
-    options = options.options
-  }
-  if (record.Ctor) {
-    record.Ctor.options.render = options.render
-    record.Ctor.options.staticRenderFns = options.staticRenderFns
-    record.instances.slice().forEach(function (instance) {
-      instance.$options.render = options.render
-      instance.$options.staticRenderFns = options.staticRenderFns
-      // reset static trees
-      // pre 2.5, all static trees are cached together on the instance
-      if (instance._staticTrees) {
-        instance._staticTrees = []
-      }
-      // 2.5.0
-      if (Array.isArray(record.Ctor.options.cached)) {
-        record.Ctor.options.cached = []
-      }
-      // 2.5.3
-      if (Array.isArray(instance.$options.cached)) {
-        instance.$options.cached = []
-      }
-
-      // post 2.5.4: v-once trees are cached on instance._staticTrees.
-      // Pure static trees are cached on the staticRenderFns array
-      // (both already reset above)
-
-      // 2.6: temporarily mark rendered scoped slots as unstable so that
-      // child components can be forced to update
-      var restore = patchScopedSlots(instance)
-      instance.$forceUpdate()
-      instance.$nextTick(restore)
-    })
-  } else {
-    // functional or no instance created yet
-    record.options.render = options.render
-    record.options.staticRenderFns = options.staticRenderFns
-
-    // handle functional component re-render
-    if (record.options.functional) {
-      // rerender with full options
-      if (Object.keys(options).length > 2) {
-        updateOptions(record.options, options)
-      } else {
-        // template-only rerender.
-        // need to inject the style injection code for CSS modules
-        // to work properly.
-        var injectStyles = record.options._injectStyles
-        if (injectStyles) {
-          var render = options.render
-          record.options.render = function (h, ctx) {
-            injectStyles.call(ctx)
-            return render(h, ctx)
-          }
-        }
-      }
-      record.options._Ctor = null
-      // 2.5.3
-      if (Array.isArray(record.options.cached)) {
-        record.options.cached = []
-      }
-      record.instances.slice().forEach(function (instance) {
-        instance.$forceUpdate()
-      })
-    }
-  }
-})
-
-exports.reload = tryWrap(function (id, options) {
-  var record = map[id]
-  if (options) {
-    if (typeof options === 'function') {
-      options = options.options
-    }
-    makeOptionsHot(id, options)
-    if (record.Ctor) {
-      if (version[1] < 2) {
-        // preserve pre 2.2 behavior for global mixin handling
-        record.Ctor.extendOptions = options
-      }
-      var newCtor = record.Ctor.super.extend(options)
-      // prevent record.options._Ctor from being overwritten accidentally
-      newCtor.options._Ctor = record.options._Ctor
-      record.Ctor.options = newCtor.options
-      record.Ctor.cid = newCtor.cid
-      record.Ctor.prototype = newCtor.prototype
-      if (newCtor.release) {
-        // temporary global mixin strategy used in < 2.0.0-alpha.6
-        newCtor.release()
-      }
-    } else {
-      updateOptions(record.options, options)
-    }
-  }
-  record.instances.slice().forEach(function (instance) {
-    if (instance.$vnode && instance.$vnode.context) {
-      instance.$vnode.context.$forceUpdate()
-    } else {
-      console.warn(
-        'Root or manually mounted instance modified. Full reload required.'
-      )
-    }
-  })
-})
-
-// 2.6 optimizes template-compiled scoped slots and skips updates if child
-// only uses scoped slots. We need to patch the scoped slots resolving helper
-// to temporarily mark all scoped slots as unstable in order to force child
-// updates.
-function patchScopedSlots (instance) {
-  if (!instance._u) { return }
-  // https://github.com/vuejs/vue/blob/dev/src/core/instance/render-helpers/resolve-scoped-slots.js
-  var original = instance._u
-  instance._u = function (slots) {
-    try {
-      // 2.6.4 ~ 2.6.6
-      return original(slots, true)
-    } catch (e) {
-      // 2.5 / >= 2.6.7
-      return original(slots, null, true)
-    }
-  }
-  return function () {
-    instance._u = original
-  }
-}
-
-},{}],"Btn.vue":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-var _default = {
-  props: {
-    action: {
-      required: true,
-      type: Object
-    }
-  }
-};
-exports.default = _default;
-        var $b2470a = exports.default || module.exports;
-      
-      if (typeof $b2470a === 'function') {
-        $b2470a = $b2470a.options;
-      }
-    
-        /* template */
-        Object.assign($b2470a, (function () {
-          var render = function() {
-  var _vm = this
-  var _h = _vm.$createElement
-  var _c = _vm._self._c || _h
-  return _c(
-    "button",
-    {
-      on: {
-        click: function($event) {
-          return _vm.action.send("CLICKED")
-        },
-        mouseenter: function($event) {
-          return _vm.action.send("OVER")
-        },
-        mouseleave: function($event) {
-          return _vm.action.send("OFF")
-        },
-        mousedown: function($event) {
-          return _vm.action.send("DOWN")
-        }
-      }
-    },
-    [_vm._t("default")],
-    2
-  )
-}
-var staticRenderFns = []
-render._withStripped = true
-
-          return {
-            render: render,
-            staticRenderFns: staticRenderFns,
-            _compiled: true,
-            _scopeId: null,
-            functional: undefined
-          };
-        })());
-      
-    /* hot reload */
-    (function () {
-      if (module.hot) {
-        var api = require('vue-hot-reload-api');
-        api.install(require('vue'));
-        if (api.compatible) {
-          module.hot.accept();
-          if (!module.hot.data) {
-            api.createRecord('$b2470a', $b2470a);
-          } else {
-            api.reload('$b2470a', $b2470a);
-          }
-        }
-
-        
-      }
-    })();
-},{"vue-hot-reload-api":"../../../../../node_modules/vue-hot-reload-api/dist/index.js","vue":"../../../../../node_modules/vue/dist/vue.runtime.esm.js"}],"../../../../../node_modules/xstate/es/_virtual/_tslib.js":[function(require,module,exports) {
+},{}],"../../../../../../node_modules/xstate/es/_virtual/_tslib.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9004,7 +8640,7 @@ function __spread() {
 
   return ar;
 }
-},{}],"../../../../../node_modules/xstate/es/constants.js":[function(require,module,exports) {
+},{}],"../../../../../../node_modules/xstate/es/constants.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9019,7 +8655,7 @@ var DEFAULT_GUARD_TYPE = 'xstate.guard';
 exports.DEFAULT_GUARD_TYPE = DEFAULT_GUARD_TYPE;
 var TARGETLESS_KEY = '';
 exports.TARGETLESS_KEY = TARGETLESS_KEY;
-},{}],"../../../../../node_modules/xstate/es/environment.js":[function(require,module,exports) {
+},{}],"../../../../../../node_modules/xstate/es/environment.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9028,7 +8664,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.IS_PRODUCTION = void 0;
 var IS_PRODUCTION = "development" === 'production';
 exports.IS_PRODUCTION = IS_PRODUCTION;
-},{}],"../../../../../node_modules/xstate/es/utils.js":[function(require,module,exports) {
+},{}],"../../../../../../node_modules/xstate/es/utils.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9678,7 +9314,7 @@ function toInvokeSource(src) {
 
   return src;
 }
-},{"./_virtual/_tslib.js":"../../../../../node_modules/xstate/es/_virtual/_tslib.js","./constants.js":"../../../../../node_modules/xstate/es/constants.js","./environment.js":"../../../../../node_modules/xstate/es/environment.js"}],"../../../../../node_modules/xstate/es/mapState.js":[function(require,module,exports) {
+},{"./_virtual/_tslib.js":"../../../../../../node_modules/xstate/es/_virtual/_tslib.js","./constants.js":"../../../../../../node_modules/xstate/es/constants.js","./environment.js":"../../../../../../node_modules/xstate/es/environment.js"}],"../../../../../../node_modules/xstate/es/mapState.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9717,7 +9353,7 @@ function mapState(stateMap, stateId) {
 
   return stateMap[foundStateId];
 }
-},{"./_virtual/_tslib.js":"../../../../../node_modules/xstate/es/_virtual/_tslib.js","./utils.js":"../../../../../node_modules/xstate/es/utils.js"}],"../../../../../node_modules/xstate/es/types.js":[function(require,module,exports) {
+},{"./_virtual/_tslib.js":"../../../../../../node_modules/xstate/es/_virtual/_tslib.js","./utils.js":"../../../../../../node_modules/xstate/es/utils.js"}],"../../../../../../node_modules/xstate/es/types.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9757,7 +9393,7 @@ exports.SpecialTargets = SpecialTargets;
   SpecialTargets["Parent"] = "#_parent";
   SpecialTargets["Internal"] = "#_internal";
 })(SpecialTargets || (exports.SpecialTargets = SpecialTargets = {}));
-},{}],"../../../../../node_modules/xstate/es/actionTypes.js":[function(require,module,exports) {
+},{}],"../../../../../../node_modules/xstate/es/actionTypes.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9804,7 +9440,7 @@ var choose = _types.ActionTypes.Choose;
 exports.choose = choose;
 var pure = _types.ActionTypes.Pure;
 exports.pure = pure;
-},{"./types.js":"../../../../../node_modules/xstate/es/types.js"}],"../../../../../node_modules/xstate/es/actions.js":[function(require,module,exports) {
+},{"./types.js":"../../../../../../node_modules/xstate/es/types.js"}],"../../../../../../node_modules/xstate/es/actions.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10340,7 +9976,7 @@ function resolveActions(machine, currentState, currentContext, _event, actions) 
   }));
   return [resolvedActions, updatedContext];
 }
-},{"./_virtual/_tslib.js":"../../../../../node_modules/xstate/es/_virtual/_tslib.js","./environment.js":"../../../../../node_modules/xstate/es/environment.js","./utils.js":"../../../../../node_modules/xstate/es/utils.js","./types.js":"../../../../../node_modules/xstate/es/types.js","./actionTypes.js":"../../../../../node_modules/xstate/es/actionTypes.js"}],"../../../../../node_modules/xstate/es/stateUtils.js":[function(require,module,exports) {
+},{"./_virtual/_tslib.js":"../../../../../../node_modules/xstate/es/_virtual/_tslib.js","./environment.js":"../../../../../../node_modules/xstate/es/environment.js","./utils.js":"../../../../../../node_modules/xstate/es/utils.js","./types.js":"../../../../../../node_modules/xstate/es/types.js","./actionTypes.js":"../../../../../../node_modules/xstate/es/actionTypes.js"}],"../../../../../../node_modules/xstate/es/stateUtils.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10607,7 +10243,7 @@ function isInFinalState(configuration, stateNode) {
 
   return false;
 }
-},{"./_virtual/_tslib.js":"../../../../../node_modules/xstate/es/_virtual/_tslib.js","./utils.js":"../../../../../node_modules/xstate/es/utils.js"}],"../../../../../node_modules/xstate/es/State.js":[function(require,module,exports) {
+},{"./_virtual/_tslib.js":"../../../../../../node_modules/xstate/es/_virtual/_tslib.js","./utils.js":"../../../../../../node_modules/xstate/es/utils.js"}],"../../../../../../node_modules/xstate/es/State.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10855,7 +10491,7 @@ function () {
 }();
 
 exports.State = State;
-},{"./_virtual/_tslib.js":"../../../../../node_modules/xstate/es/_virtual/_tslib.js","./constants.js":"../../../../../node_modules/xstate/es/constants.js","./utils.js":"../../../../../node_modules/xstate/es/utils.js","./stateUtils.js":"../../../../../node_modules/xstate/es/stateUtils.js","./actions.js":"../../../../../node_modules/xstate/es/actions.js"}],"../../../../../node_modules/xstate/es/serviceScope.js":[function(require,module,exports) {
+},{"./_virtual/_tslib.js":"../../../../../../node_modules/xstate/es/_virtual/_tslib.js","./constants.js":"../../../../../../node_modules/xstate/es/constants.js","./utils.js":"../../../../../../node_modules/xstate/es/utils.js","./stateUtils.js":"../../../../../../node_modules/xstate/es/stateUtils.js","./actions.js":"../../../../../../node_modules/xstate/es/actions.js"}],"../../../../../../node_modules/xstate/es/serviceScope.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10883,7 +10519,7 @@ var consume = function (fn) {
 };
 
 exports.consume = consume;
-},{}],"../../../../../node_modules/xstate/es/Actor.js":[function(require,module,exports) {
+},{}],"../../../../../../node_modules/xstate/es/Actor.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10958,7 +10594,7 @@ function isActor(item) {
     return false;
   }
 }
-},{"./utils.js":"../../../../../node_modules/xstate/es/utils.js","./serviceScope.js":"../../../../../node_modules/xstate/es/serviceScope.js"}],"../../../../../node_modules/xstate/es/invokeUtils.js":[function(require,module,exports) {
+},{"./utils.js":"../../../../../../node_modules/xstate/es/utils.js","./serviceScope.js":"../../../../../../node_modules/xstate/es/serviceScope.js"}],"../../../../../../node_modules/xstate/es/invokeUtils.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11005,7 +10641,7 @@ function toInvokeDefinition(invokeConfig) {
     }
   });
 }
-},{"./_virtual/_tslib.js":"../../../../../node_modules/xstate/es/_virtual/_tslib.js","./actionTypes.js":"../../../../../node_modules/xstate/es/actionTypes.js","./actions.js":"../../../../../node_modules/xstate/es/actions.js"}],"../../../../../node_modules/xstate/es/StateNode.js":[function(require,module,exports) {
+},{"./_virtual/_tslib.js":"../../../../../../node_modules/xstate/es/_virtual/_tslib.js","./actionTypes.js":"../../../../../../node_modules/xstate/es/actionTypes.js","./actions.js":"../../../../../../node_modules/xstate/es/actions.js"}],"../../../../../../node_modules/xstate/es/StateNode.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -12569,7 +12205,7 @@ function () {
 }();
 
 exports.StateNode = StateNode;
-},{"./_virtual/_tslib.js":"../../../../../node_modules/xstate/es/_virtual/_tslib.js","./constants.js":"../../../../../node_modules/xstate/es/constants.js","./environment.js":"../../../../../node_modules/xstate/es/environment.js","./utils.js":"../../../../../node_modules/xstate/es/utils.js","./types.js":"../../../../../node_modules/xstate/es/types.js","./stateUtils.js":"../../../../../node_modules/xstate/es/stateUtils.js","./actionTypes.js":"../../../../../node_modules/xstate/es/actionTypes.js","./actions.js":"../../../../../node_modules/xstate/es/actions.js","./State.js":"../../../../../node_modules/xstate/es/State.js","./Actor.js":"../../../../../node_modules/xstate/es/Actor.js","./invokeUtils.js":"../../../../../node_modules/xstate/es/invokeUtils.js"}],"../../../../../node_modules/xstate/es/Machine.js":[function(require,module,exports) {
+},{"./_virtual/_tslib.js":"../../../../../../node_modules/xstate/es/_virtual/_tslib.js","./constants.js":"../../../../../../node_modules/xstate/es/constants.js","./environment.js":"../../../../../../node_modules/xstate/es/environment.js","./utils.js":"../../../../../../node_modules/xstate/es/utils.js","./types.js":"../../../../../../node_modules/xstate/es/types.js","./stateUtils.js":"../../../../../../node_modules/xstate/es/stateUtils.js","./actionTypes.js":"../../../../../../node_modules/xstate/es/actionTypes.js","./actions.js":"../../../../../../node_modules/xstate/es/actions.js","./State.js":"../../../../../../node_modules/xstate/es/State.js","./Actor.js":"../../../../../../node_modules/xstate/es/Actor.js","./invokeUtils.js":"../../../../../../node_modules/xstate/es/invokeUtils.js"}],"../../../../../../node_modules/xstate/es/Machine.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -12593,7 +12229,7 @@ function createMachine(config, options) {
   var resolvedInitialContext = typeof config.context === 'function' ? config.context() : config.context;
   return new _StateNode.StateNode(config, options, resolvedInitialContext);
 }
-},{"./StateNode.js":"../../../../../node_modules/xstate/es/StateNode.js"}],"../../../../../node_modules/xstate/es/scheduler.js":[function(require,module,exports) {
+},{"./StateNode.js":"../../../../../../node_modules/xstate/es/StateNode.js"}],"../../../../../../node_modules/xstate/es/scheduler.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -12680,7 +12316,7 @@ function () {
 }();
 
 exports.Scheduler = Scheduler;
-},{"./_virtual/_tslib.js":"../../../../../node_modules/xstate/es/_virtual/_tslib.js"}],"../../../../../node_modules/xstate/es/registry.js":[function(require,module,exports) {
+},{"./_virtual/_tslib.js":"../../../../../../node_modules/xstate/es/_virtual/_tslib.js"}],"../../../../../../node_modules/xstate/es/registry.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -12705,7 +12341,7 @@ var registry = {
   }
 };
 exports.registry = registry;
-},{}],"../../../../../node_modules/xstate/es/devTools.js":[function(require,module,exports) {
+},{}],"../../../../../../node_modules/xstate/es/devTools.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -12736,7 +12372,7 @@ function registerService(service) {
     devTools.register(service);
   }
 }
-},{"./environment.js":"../../../../../node_modules/xstate/es/environment.js"}],"../../../../../node_modules/xstate/es/interpreter.js":[function(require,module,exports) {
+},{"./environment.js":"../../../../../../node_modules/xstate/es/environment.js"}],"../../../../../../node_modules/xstate/es/interpreter.js":[function(require,module,exports) {
 var global = arguments[3];
 "use strict";
 
@@ -14064,7 +13700,7 @@ function interpret(machine, options) {
   var interpreter = new Interpreter(machine, options);
   return interpreter;
 }
-},{"./_virtual/_tslib.js":"../../../../../node_modules/xstate/es/_virtual/_tslib.js","./environment.js":"../../../../../node_modules/xstate/es/environment.js","./utils.js":"../../../../../node_modules/xstate/es/utils.js","./types.js":"../../../../../node_modules/xstate/es/types.js","./stateUtils.js":"../../../../../node_modules/xstate/es/stateUtils.js","./actionTypes.js":"../../../../../node_modules/xstate/es/actionTypes.js","./actions.js":"../../../../../node_modules/xstate/es/actions.js","./State.js":"../../../../../node_modules/xstate/es/State.js","./serviceScope.js":"../../../../../node_modules/xstate/es/serviceScope.js","./Actor.js":"../../../../../node_modules/xstate/es/Actor.js","./scheduler.js":"../../../../../node_modules/xstate/es/scheduler.js","./registry.js":"../../../../../node_modules/xstate/es/registry.js","./devTools.js":"../../../../../node_modules/xstate/es/devTools.js"}],"../../../../../node_modules/xstate/es/match.js":[function(require,module,exports) {
+},{"./_virtual/_tslib.js":"../../../../../../node_modules/xstate/es/_virtual/_tslib.js","./environment.js":"../../../../../../node_modules/xstate/es/environment.js","./utils.js":"../../../../../../node_modules/xstate/es/utils.js","./types.js":"../../../../../../node_modules/xstate/es/types.js","./stateUtils.js":"../../../../../../node_modules/xstate/es/stateUtils.js","./actionTypes.js":"../../../../../../node_modules/xstate/es/actionTypes.js","./actions.js":"../../../../../../node_modules/xstate/es/actions.js","./State.js":"../../../../../../node_modules/xstate/es/State.js","./serviceScope.js":"../../../../../../node_modules/xstate/es/serviceScope.js","./Actor.js":"../../../../../../node_modules/xstate/es/Actor.js","./scheduler.js":"../../../../../../node_modules/xstate/es/scheduler.js","./registry.js":"../../../../../../node_modules/xstate/es/registry.js","./devTools.js":"../../../../../../node_modules/xstate/es/devTools.js"}],"../../../../../../node_modules/xstate/es/match.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -14105,7 +13741,7 @@ function matchState(state, patterns, defaultValue) {
 
   return defaultValue(resolvedState);
 }
-},{"./_virtual/_tslib.js":"../../../../../node_modules/xstate/es/_virtual/_tslib.js","./State.js":"../../../../../node_modules/xstate/es/State.js"}],"../../../../../node_modules/xstate/es/index.js":[function(require,module,exports) {
+},{"./_virtual/_tslib.js":"../../../../../../node_modules/xstate/es/_virtual/_tslib.js","./State.js":"../../../../../../node_modules/xstate/es/State.js"}],"../../../../../../node_modules/xstate/es/index.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -14264,7 +13900,7 @@ var actions = {
   pure: _actions.pure
 };
 exports.actions = actions;
-},{"./utils.js":"../../../../../node_modules/xstate/es/utils.js","./mapState.js":"../../../../../node_modules/xstate/es/mapState.js","./types.js":"../../../../../node_modules/xstate/es/types.js","./actions.js":"../../../../../node_modules/xstate/es/actions.js","./State.js":"../../../../../node_modules/xstate/es/State.js","./StateNode.js":"../../../../../node_modules/xstate/es/StateNode.js","./Machine.js":"../../../../../node_modules/xstate/es/Machine.js","./interpreter.js":"../../../../../node_modules/xstate/es/interpreter.js","./match.js":"../../../../../node_modules/xstate/es/match.js"}],"../../base.js":[function(require,module,exports) {
+},{"./utils.js":"../../../../../../node_modules/xstate/es/utils.js","./mapState.js":"../../../../../../node_modules/xstate/es/mapState.js","./types.js":"../../../../../../node_modules/xstate/es/types.js","./actions.js":"../../../../../../node_modules/xstate/es/actions.js","./State.js":"../../../../../../node_modules/xstate/es/State.js","./StateNode.js":"../../../../../../node_modules/xstate/es/StateNode.js","./Machine.js":"../../../../../../node_modules/xstate/es/Machine.js","./interpreter.js":"../../../../../../node_modules/xstate/es/interpreter.js","./match.js":"../../../../../../node_modules/xstate/es/match.js"}],"../../../../buttons/base.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -14325,7 +13961,7 @@ var makeBaseButton = function makeBaseButton(initialState) {
 };
 
 exports.makeBaseButton = makeBaseButton;
-},{"xstate":"../../../../../node_modules/xstate/es/index.js"}],"../../common.js":[function(require,module,exports) {
+},{"xstate":"../../../../../../node_modules/xstate/es/index.js"}],"../../../../buttons/common.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -14347,7 +13983,7 @@ var common = function common(initialState) {
   return {
     config: {
       id: "common",
-      initial: initialState,
+      initial: 'off',
       states: {
         over: {
           on: {
@@ -14410,7 +14046,211 @@ var makeButtonState = function makeButtonState(initialState) {
 };
 
 exports.makeButtonState = makeButtonState;
-},{"xstate":"../../../../../node_modules/xstate/es/index.js","./base":"../../base.js"}],"../../../../../node_modules/parcel-bundler/src/builtins/bundle-url.js":[function(require,module,exports) {
+},{"xstate":"../../../../../../node_modules/xstate/es/index.js","./base":"../../../../buttons/base.js"}],"../../toggle.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.makeToggleState = exports.makeToggle = exports.toggle = void 0;
+
+var _xstate = require("xstate");
+
+var _common = require("../buttons/common");
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var moveToActive = (0, _xstate.assign)({
+  selected: function selected() {
+    return true;
+  },
+  position: function position() {
+    return 'active';
+  }
+});
+var moveToInActive = (0, _xstate.assign)({
+  selected: function selected() {
+    return false;
+  },
+  position: function position() {
+    return 'inactive';
+  }
+});
+var moveToNeutral = (0, _xstate.assign)({
+  selected: function selected() {
+    return undefined;
+  },
+  position: function position() {
+    return 'neutral';
+  }
+});
+
+var toggle = function toggle(initialState) {
+  return {
+    config: {
+      id: "toggle",
+      initial: initialState.selected ? 'active' : 'inactive',
+      context: _objectSpread(_objectSpread({}, initialState), {}, {
+        position: initialState.selected ? 'active' : 'inactive'
+      }),
+      states: {
+        active: _objectSpread({
+          on: {
+            TOGGLE: {
+              target: "inactive.over",
+              actions: "moveToInActive"
+            },
+            OFF: {
+              target: "inactive.over",
+              actions: "moveToInActive"
+            },
+            NEUTRAL: {
+              target: "neutral.over",
+              actions: "moveToNeutral"
+            }
+          }
+        }, (0, _common.common)().config),
+        neutral: _objectSpread({
+          on: {
+            TOGGLE: {
+              target: "active.over",
+              actions: "moveToActive"
+            },
+            ON: {
+              target: "active.over",
+              actions: "moveToActive"
+            },
+            OFF: {
+              target: "inactive.over",
+              actions: "moveToInActive"
+            }
+          }
+        }, (0, _common.common)().config),
+        inactive: _objectSpread({
+          on: {
+            TOGGLE: {
+              target: "active.over",
+              actions: "moveToActive"
+            },
+            ON: {
+              target: "active.over",
+              actions: "moveToActive"
+            },
+            NEUTRAL: {
+              target: "neutral.over",
+              actions: "moveToNeutral"
+            }
+          }
+        }, (0, _common.common)().config)
+      }
+    },
+    options: _objectSpread(_objectSpread({}, (0, _common.common)().options), {}, {
+      actions: {
+        moveToActive: moveToActive,
+        moveToInActive: moveToInActive,
+        moveToNeutral: moveToNeutral
+      }
+    })
+  };
+};
+
+exports.toggle = toggle;
+
+var makeToggle = function makeToggle(initialState) {
+  var state = toggle(initialState);
+  return (0, _xstate.Machine)(state.config, state.options);
+};
+
+exports.makeToggle = makeToggle;
+
+var makeToggleState = function makeToggleState(initialState) {
+  return (0, _xstate.interpret)(makeToggle(initialState)).start();
+};
+
+exports.makeToggleState = makeToggleState;
+},{"xstate":"../../../../../../node_modules/xstate/es/index.js","../buttons/common":"../../../../buttons/common.js"}],"../../check.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.makeCheckState = exports.makeCheck = exports.check = void 0;
+
+var _xstate = require("xstate");
+
+var _toggle = require("./toggle");
+
+var _common = require("../buttons/common");
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var check = function check(initialState) {
+  return {
+    config: {
+      id: "check",
+      initial: initialState.selected ? 'active' : 'inactive',
+      context: _objectSpread(_objectSpread({}, initialState), {}, {
+        position: initialState.selected ? 'active' : 'inactive'
+      }),
+      states: {
+        active: _objectSpread({
+          on: {
+            TOGGLE: {
+              target: "inactive.over",
+              actions: "moveToInActive"
+            },
+            OFF: {
+              target: "inactive.over",
+              actions: "moveToInActive"
+            }
+          }
+        }, (0, _common.common)().config),
+        inactive: _objectSpread({
+          on: {
+            TOGGLE: {
+              target: "active.over",
+              actions: "moveToActive"
+            },
+            ON: {
+              target: "active.over",
+              actions: "moveToActive"
+            }
+          }
+        }, (0, _common.common)().config)
+      }
+    },
+    options: _objectSpread(_objectSpread({}, (0, _common.common)().options), {}, {
+      actions: {
+        moveToActive: (0, _toggle.toggle)(initialState).options.actions.moveToActive,
+        moveToInActive: (0, _toggle.toggle)(initialState).options.actions.moveToInActive
+      }
+    })
+  };
+};
+
+exports.check = check;
+
+var makeCheck = function makeCheck(initialState) {
+  var state = check(initialState);
+  return (0, _xstate.Machine)(state.config, state.options);
+};
+
+exports.makeCheck = makeCheck;
+
+var makeCheckState = function makeCheckState(initialState) {
+  return (0, _xstate.interpret)(makeCheck(initialState)).start();
+};
+
+exports.makeCheckState = makeCheckState;
+},{"xstate":"../../../../../../node_modules/xstate/es/index.js","./toggle":"../../toggle.js","../buttons/common":"../../../../buttons/common.js"}],"../../../../../../node_modules/parcel-bundler/src/builtins/bundle-url.js":[function(require,module,exports) {
 var bundleURL = null;
 
 function getBundleURLCached() {
@@ -14442,7 +14282,7 @@ function getBaseURL(url) {
 
 exports.getBundleURL = getBundleURLCached;
 exports.getBaseURL = getBaseURL;
-},{}],"../../../../../node_modules/parcel-bundler/src/builtins/css-loader.js":[function(require,module,exports) {
+},{}],"../../../../../../node_modules/parcel-bundler/src/builtins/css-loader.js":[function(require,module,exports) {
 var bundle = require('./bundle-url');
 
 function updateLink(link) {
@@ -14477,7 +14317,282 @@ function reloadCSS() {
 }
 
 module.exports = reloadCSS;
-},{"./bundle-url":"../../../../../node_modules/parcel-bundler/src/builtins/bundle-url.js"}],"main.vue":[function(require,module,exports) {
+},{"./bundle-url":"../../../../../../node_modules/parcel-bundler/src/builtins/bundle-url.js"}],"../../../../../../node_modules/vue-hot-reload-api/dist/index.js":[function(require,module,exports) {
+var Vue // late bind
+var version
+var map = Object.create(null)
+if (typeof window !== 'undefined') {
+  window.__VUE_HOT_MAP__ = map
+}
+var installed = false
+var isBrowserify = false
+var initHookName = 'beforeCreate'
+
+exports.install = function (vue, browserify) {
+  if (installed) { return }
+  installed = true
+
+  Vue = vue.__esModule ? vue.default : vue
+  version = Vue.version.split('.').map(Number)
+  isBrowserify = browserify
+
+  // compat with < 2.0.0-alpha.7
+  if (Vue.config._lifecycleHooks.indexOf('init') > -1) {
+    initHookName = 'init'
+  }
+
+  exports.compatible = version[0] >= 2
+  if (!exports.compatible) {
+    console.warn(
+      '[HMR] You are using a version of vue-hot-reload-api that is ' +
+        'only compatible with Vue.js core ^2.0.0.'
+    )
+    return
+  }
+}
+
+/**
+ * Create a record for a hot module, which keeps track of its constructor
+ * and instances
+ *
+ * @param {String} id
+ * @param {Object} options
+ */
+
+exports.createRecord = function (id, options) {
+  if(map[id]) { return }
+
+  var Ctor = null
+  if (typeof options === 'function') {
+    Ctor = options
+    options = Ctor.options
+  }
+  makeOptionsHot(id, options)
+  map[id] = {
+    Ctor: Ctor,
+    options: options,
+    instances: []
+  }
+}
+
+/**
+ * Check if module is recorded
+ *
+ * @param {String} id
+ */
+
+exports.isRecorded = function (id) {
+  return typeof map[id] !== 'undefined'
+}
+
+/**
+ * Make a Component options object hot.
+ *
+ * @param {String} id
+ * @param {Object} options
+ */
+
+function makeOptionsHot(id, options) {
+  if (options.functional) {
+    var render = options.render
+    options.render = function (h, ctx) {
+      var instances = map[id].instances
+      if (ctx && instances.indexOf(ctx.parent) < 0) {
+        instances.push(ctx.parent)
+      }
+      return render(h, ctx)
+    }
+  } else {
+    injectHook(options, initHookName, function() {
+      var record = map[id]
+      if (!record.Ctor) {
+        record.Ctor = this.constructor
+      }
+      record.instances.push(this)
+    })
+    injectHook(options, 'beforeDestroy', function() {
+      var instances = map[id].instances
+      instances.splice(instances.indexOf(this), 1)
+    })
+  }
+}
+
+/**
+ * Inject a hook to a hot reloadable component so that
+ * we can keep track of it.
+ *
+ * @param {Object} options
+ * @param {String} name
+ * @param {Function} hook
+ */
+
+function injectHook(options, name, hook) {
+  var existing = options[name]
+  options[name] = existing
+    ? Array.isArray(existing) ? existing.concat(hook) : [existing, hook]
+    : [hook]
+}
+
+function tryWrap(fn) {
+  return function (id, arg) {
+    try {
+      fn(id, arg)
+    } catch (e) {
+      console.error(e)
+      console.warn(
+        'Something went wrong during Vue component hot-reload. Full reload required.'
+      )
+    }
+  }
+}
+
+function updateOptions (oldOptions, newOptions) {
+  for (var key in oldOptions) {
+    if (!(key in newOptions)) {
+      delete oldOptions[key]
+    }
+  }
+  for (var key$1 in newOptions) {
+    oldOptions[key$1] = newOptions[key$1]
+  }
+}
+
+exports.rerender = tryWrap(function (id, options) {
+  var record = map[id]
+  if (!options) {
+    record.instances.slice().forEach(function (instance) {
+      instance.$forceUpdate()
+    })
+    return
+  }
+  if (typeof options === 'function') {
+    options = options.options
+  }
+  if (record.Ctor) {
+    record.Ctor.options.render = options.render
+    record.Ctor.options.staticRenderFns = options.staticRenderFns
+    record.instances.slice().forEach(function (instance) {
+      instance.$options.render = options.render
+      instance.$options.staticRenderFns = options.staticRenderFns
+      // reset static trees
+      // pre 2.5, all static trees are cached together on the instance
+      if (instance._staticTrees) {
+        instance._staticTrees = []
+      }
+      // 2.5.0
+      if (Array.isArray(record.Ctor.options.cached)) {
+        record.Ctor.options.cached = []
+      }
+      // 2.5.3
+      if (Array.isArray(instance.$options.cached)) {
+        instance.$options.cached = []
+      }
+
+      // post 2.5.4: v-once trees are cached on instance._staticTrees.
+      // Pure static trees are cached on the staticRenderFns array
+      // (both already reset above)
+
+      // 2.6: temporarily mark rendered scoped slots as unstable so that
+      // child components can be forced to update
+      var restore = patchScopedSlots(instance)
+      instance.$forceUpdate()
+      instance.$nextTick(restore)
+    })
+  } else {
+    // functional or no instance created yet
+    record.options.render = options.render
+    record.options.staticRenderFns = options.staticRenderFns
+
+    // handle functional component re-render
+    if (record.options.functional) {
+      // rerender with full options
+      if (Object.keys(options).length > 2) {
+        updateOptions(record.options, options)
+      } else {
+        // template-only rerender.
+        // need to inject the style injection code for CSS modules
+        // to work properly.
+        var injectStyles = record.options._injectStyles
+        if (injectStyles) {
+          var render = options.render
+          record.options.render = function (h, ctx) {
+            injectStyles.call(ctx)
+            return render(h, ctx)
+          }
+        }
+      }
+      record.options._Ctor = null
+      // 2.5.3
+      if (Array.isArray(record.options.cached)) {
+        record.options.cached = []
+      }
+      record.instances.slice().forEach(function (instance) {
+        instance.$forceUpdate()
+      })
+    }
+  }
+})
+
+exports.reload = tryWrap(function (id, options) {
+  var record = map[id]
+  if (options) {
+    if (typeof options === 'function') {
+      options = options.options
+    }
+    makeOptionsHot(id, options)
+    if (record.Ctor) {
+      if (version[1] < 2) {
+        // preserve pre 2.2 behavior for global mixin handling
+        record.Ctor.extendOptions = options
+      }
+      var newCtor = record.Ctor.super.extend(options)
+      // prevent record.options._Ctor from being overwritten accidentally
+      newCtor.options._Ctor = record.options._Ctor
+      record.Ctor.options = newCtor.options
+      record.Ctor.cid = newCtor.cid
+      record.Ctor.prototype = newCtor.prototype
+      if (newCtor.release) {
+        // temporary global mixin strategy used in < 2.0.0-alpha.6
+        newCtor.release()
+      }
+    } else {
+      updateOptions(record.options, options)
+    }
+  }
+  record.instances.slice().forEach(function (instance) {
+    if (instance.$vnode && instance.$vnode.context) {
+      instance.$vnode.context.$forceUpdate()
+    } else {
+      console.warn(
+        'Root or manually mounted instance modified. Full reload required.'
+      )
+    }
+  })
+})
+
+// 2.6 optimizes template-compiled scoped slots and skips updates if child
+// only uses scoped slots. We need to patch the scoped slots resolving helper
+// to temporarily mark all scoped slots as unstable in order to force child
+// updates.
+function patchScopedSlots (instance) {
+  if (!instance._u) { return }
+  // https://github.com/vuejs/vue/blob/dev/src/core/instance/render-helpers/resolve-scoped-slots.js
+  var original = instance._u
+  instance._u = function (slots) {
+    try {
+      // 2.6.4 ~ 2.6.6
+      return original(slots, true)
+    } catch (e) {
+      // 2.5 / >= 2.6.7
+      return original(slots, null, true)
+    }
+  }
+  return function () {
+    instance._u = original
+  }
+}
+
+},{}],"check.vue":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -14485,12 +14600,46 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 
-var _Btn = _interopRequireDefault(require("./Btn"));
+var _check = require("../../check");
 
-var _common = require("../../common");
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 //
 //
 //
@@ -14516,6 +14665,13 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 //
 //
 var _default = {
+  name: 'checkbox',
+  props: {
+    id: {
+      type: String,
+      required: true
+    }
+  },
   data: function data() {
     return {
       style: ''
@@ -14524,38 +14680,46 @@ var _default = {
   beforeMount: function beforeMount() {
     var _this = this;
 
-    this.button = (0, _common.makeButtonState)('enabled');
-    this.button.onTransition(function (state) {
-      _this.style = state.value;
-      console.log(state.value);
+    this.check = (0, _check.makeCheckState)({
+      id: this.id,
+      selected: true
     });
-  },
-  components: {
-    Btn: _Btn.default
+    this.check.onTransition(function (state) {
+      _this.style = state.context.position;
+
+      _this.$emit('change', state.context);
+    });
   }
 };
 exports.default = _default;
-        var $f205b4 = exports.default || module.exports;
+        var $2cea0c = exports.default || module.exports;
       
-      if (typeof $f205b4 === 'function') {
-        $f205b4 = $f205b4.options;
+      if (typeof $2cea0c === 'function') {
+        $2cea0c = $2cea0c.options;
       }
     
         /* template */
-        Object.assign($f205b4, (function () {
+        Object.assign($2cea0c, (function () {
           var render = function() {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _c(
-    "div",
-    [
-      _c("Btn", { class: _vm.style, attrs: { action: _vm.button } }, [
-        _vm._v("\n      Yo!\n  ")
-      ])
-    ],
-    1
-  )
+  return _c("div", { staticClass: "check", class: _vm.style }, [
+    _c("div", [
+      _c("input", {
+        attrs: { type: "checkbox" },
+        on: {
+          click: function($event) {
+            return _vm.check.send("TOGGLE")
+          }
+        }
+      }),
+      _vm._v(" "),
+      _c("div", { staticClass: "inner" })
+    ]),
+    _vm._v(" "),
+    _c("div", { staticClass: "label" }, [_vm._t("default")], 2)
+  ])
 }
 var staticRenderFns = []
 render._withStripped = true
@@ -14564,7 +14728,7 @@ render._withStripped = true
             render: render,
             staticRenderFns: staticRenderFns,
             _compiled: true,
-            _scopeId: "data-v-f205b4",
+            _scopeId: "data-v-2cea0c",
             functional: undefined
           };
         })());
@@ -14577,9 +14741,9 @@ render._withStripped = true
         if (api.compatible) {
           module.hot.accept();
           if (!module.hot.data) {
-            api.createRecord('$f205b4', $f205b4);
+            api.createRecord('$2cea0c', $2cea0c);
           } else {
-            api.reload('$f205b4', $f205b4);
+            api.reload('$2cea0c', $2cea0c);
           }
         }
 
@@ -14590,7 +14754,233 @@ render._withStripped = true
       
       }
     })();
-},{"./Btn":"Btn.vue","../../common":"../../common.js","_css_loader":"../../../../../node_modules/parcel-bundler/src/builtins/css-loader.js","vue-hot-reload-api":"../../../../../node_modules/vue-hot-reload-api/dist/index.js","vue":"../../../../../node_modules/vue/dist/vue.runtime.esm.js"}],"main.js":[function(require,module,exports) {
+},{"../../check":"../../check.js","_css_loader":"../../../../../../node_modules/parcel-bundler/src/builtins/css-loader.js","vue-hot-reload-api":"../../../../../../node_modules/vue-hot-reload-api/dist/index.js","vue":"../../../../../../node_modules/vue/dist/vue.runtime.esm.js"}],"toggle.vue":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _toggle = require("../../toggle");
+
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+var _default = {
+  props: {
+    id: {
+      type: String,
+      required: true
+    }
+  },
+  beforeMount: function beforeMount() {
+    var _this = this;
+
+    this.toggle = (0, _toggle.makeToggleState)({
+      id: this.id,
+      selected: true
+    });
+    this.toggle.onTransition(function (state) {
+      _this.style = state.context.position;
+
+      _this.$emit('change', state.context);
+    });
+  }
+};
+exports.default = _default;
+        var $b8c77d = exports.default || module.exports;
+      
+      if (typeof $b8c77d === 'function') {
+        $b8c77d = $b8c77d.options;
+      }
+    
+        /* template */
+        Object.assign($b8c77d, (function () {
+          var render = function() {
+  var _vm = this
+  var _h = _vm.$createElement
+  var _c = _vm._self._c || _h
+  return _vm._m(0)
+}
+var staticRenderFns = [
+  function() {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c("div", { staticClass: "container" }, [
+      _c("div", { staticClass: "base" }),
+      _vm._v(" "),
+      _c("span", { staticClass: "indicator" })
+    ])
+  }
+]
+render._withStripped = true
+
+          return {
+            render: render,
+            staticRenderFns: staticRenderFns,
+            _compiled: true,
+            _scopeId: "data-v-b8c77d",
+            functional: undefined
+          };
+        })());
+      
+    /* hot reload */
+    (function () {
+      if (module.hot) {
+        var api = require('vue-hot-reload-api');
+        api.install(require('vue'));
+        if (api.compatible) {
+          module.hot.accept();
+          if (!module.hot.data) {
+            api.createRecord('$b8c77d', $b8c77d);
+          } else {
+            api.reload('$b8c77d', $b8c77d);
+          }
+        }
+
+        
+        var reloadCSS = require('_css_loader');
+        module.hot.dispose(reloadCSS);
+        module.hot.accept(reloadCSS);
+      
+      }
+    })();
+},{"../../toggle":"../../toggle.js","_css_loader":"../../../../../../node_modules/parcel-bundler/src/builtins/css-loader.js","vue-hot-reload-api":"../../../../../../node_modules/vue-hot-reload-api/dist/index.js","vue":"../../../../../../node_modules/vue/dist/vue.runtime.esm.js"}],"main.vue":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _check = _interopRequireDefault(require("./check"));
+
+var _toggle = _interopRequireDefault(require("./toggle"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+var _default = {
+  components: {
+    checkbox: _check.default,
+    toggle: _toggle.default
+  },
+  methods: {
+    onCheck: function onCheck(event) {
+      console.log(event);
+    }
+  }
+};
+exports.default = _default;
+        var $fa6a40 = exports.default || module.exports;
+      
+      if (typeof $fa6a40 === 'function') {
+        $fa6a40 = $fa6a40.options;
+      }
+    
+        /* template */
+        Object.assign($fa6a40, (function () {
+          var render = function() {
+  var _vm = this
+  var _h = _vm.$createElement
+  var _c = _vm._self._c || _h
+  return _c(
+    "div",
+    [
+      _c("h2", [_vm._v("1. Checkbox")]),
+      _vm._v(" "),
+      _c("checkbox", { attrs: { id: "france" }, on: { change: _vm.onCheck } }, [
+        _vm._v("France")
+      ]),
+      _vm._v(" "),
+      _c(
+        "checkbox",
+        { attrs: { id: "england" }, on: { change: _vm.onCheck } },
+        [_vm._v("England")]
+      ),
+      _vm._v(" "),
+      _c("h2", [_vm._v("2. Toggle")]),
+      _vm._v(" "),
+      _c("toggle", { attrs: { id: "alerts" } })
+    ],
+    1
+  )
+}
+var staticRenderFns = []
+render._withStripped = true
+
+          return {
+            render: render,
+            staticRenderFns: staticRenderFns,
+            _compiled: true,
+            _scopeId: null,
+            functional: undefined
+          };
+        })());
+      
+    /* hot reload */
+    (function () {
+      if (module.hot) {
+        var api = require('vue-hot-reload-api');
+        api.install(require('vue'));
+        if (api.compatible) {
+          module.hot.accept();
+          if (!module.hot.data) {
+            api.createRecord('$fa6a40', $fa6a40);
+          } else {
+            api.reload('$fa6a40', $fa6a40);
+          }
+        }
+
+        
+      }
+    })();
+},{"./check":"check.vue","./toggle":"toggle.vue","vue-hot-reload-api":"../../../../../../node_modules/vue-hot-reload-api/dist/index.js","vue":"../../../../../../node_modules/vue/dist/vue.runtime.esm.js"}],"main.js":[function(require,module,exports) {
 "use strict";
 
 var _vue = _interopRequireDefault(require("vue"));
@@ -14601,11 +14991,12 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 _vue.default.config.productionTip = false;
 new _vue.default({
-  render: function render(createElement) {
-    return createElement(_main.default);
+  el: '#app',
+  render: function render(h) {
+    return h(_main.default);
   }
-}).$mount('#app');
-},{"vue":"../../../../../node_modules/vue/dist/vue.runtime.esm.js","./main.vue":"main.vue"}],"../../../../../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+});
+},{"vue":"../../../../../../node_modules/vue/dist/vue.runtime.esm.js","./main.vue":"main.vue"}],"../../../../../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -14633,7 +15024,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "55629" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "53389" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

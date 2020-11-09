@@ -5,7 +5,7 @@ export const common = (initialState) => {
   return {
     config: {
       id: "common",
-      initial: initialState,
+      initial: 'off',
 
       states: {
         over: {
