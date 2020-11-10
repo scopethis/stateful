@@ -3,8 +3,15 @@
       <h2>1. Checkbox</h2>
       <checkbox @change="onCheck" id="france">France</checkbox>
       <checkbox @change="onCheck" id="england">England</checkbox>
+
       <h2>2. Toggle</h2>
-      <toggle id="alerts"></toggle>
+      <toggle @change="onToggle" id="alerts">Send alerts</toggle>
+
+      <h2>3. Options</h2>
+      <options @change="onOption"
+        id="club"
+        :options="choices"
+        type="multiple"></options>
     </div>
 </template>
 
@@ -12,16 +19,41 @@
 <script>
 import checkbox from "./check";
 import toggle from "./toggle";
+import options from "./options";
 
 export default {
+  name: 'App',
+
   components: {
     checkbox,
-    toggle
+    toggle,
+    options
+  },
+
+  data () {
+    return {
+      choices: {
+        current: [1],
+        options: [
+          { label: "England", selected: false },
+          { label: "Scotland", selected: false },
+          { label: "Wales", selected: false },
+          { label: "Ireland", selected: false },
+          { label: "France", selected: false },
+          { label: "Italy", selected: false }
+      ]
+      }
+    }
   },
 
   methods: {
+    onOption (event) {
+    },
     onCheck (event) {
-      console.log(event)
+      // console.log(event)
+    },
+    onToggle (event) {
+      // console.log(event)
     }
   }
 };

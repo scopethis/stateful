@@ -46,6 +46,14 @@ export const makeCheck = (initialState) => {
   return Machine(state.config, state.options);
 };
 
-export const makeCheckState = (initialState) => {
-  return interpret(makeCheck(initialState)).start()
+export const makeCheckState = (initialState, callback) => {
+  const interpreter = interpret(makeCheck(initialState))
+  interpreter.onTransition(state => {
+    callback({
+      context: JSON.parse(JSON.stringify(state.context)), 
+      style: state.context.position
+    })
+  })
+  interpreter.start()
+  return {send: interpreter.send}
 }

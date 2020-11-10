@@ -85,6 +85,14 @@ export const makeToggle = (initialState) => {
   return Machine(state.config, state.options);
 };
 
-export const makeToggleState = (initialState) => {
-  return interpret(makeToggle(initialState)).start()
+export const makeToggleState = (initialState, callback) => {
+  const interpreter = interpret(makeToggle(initialState))
+  interpreter.onTransition(state => {
+    callback({
+      context: JSON.parse(JSON.stringify(state.context)), 
+      style: state.context.position
+    })
+  })
+  interpreter.start()
+  return {send: interpreter.send}
 }

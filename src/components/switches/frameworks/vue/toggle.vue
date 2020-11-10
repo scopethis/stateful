@@ -1,15 +1,26 @@
 <template>
   <div class="container" :class="style">
-    <div class="base" @click="() => toggle.send('TOGGLE')"></div>
-    <span class="indicator"></span>
+    <div class="toggle">
+      <div class="base" @click="() => toggle.send('TOGGLE')"></div>
+      <span class="indicator"></span>
+    </div>
+    <div class="label"><slot /></div>
   </div>
 </template>
 
 <style scoped lang="scss">
   $size: 20px;
   .container {
+    display: flex;
+  }
+
+  .toggle {
     position: relative;
     width: 40px;
+  }
+
+  .label {
+    margin-left: 10px;
   }
 
   .base {
@@ -19,27 +30,27 @@
     border-radius: $size;
   }
 
-    .active {
-      .base {
-        background-color: green;
-      }
-      .indicator {
-        left: 40px - $size;
-      }
+  .active {
+    .base {
+      background-color: #00c95a;
     }
-
-    .inactive {
-      .base {
-        background-color: #414141;
-      }
-      .indicator {
-        left: 0;
-      }
+    .indicator {
+      left: 40px - $size;
     }
+  }
 
-    .neutral {
-
+  .inactive {
+    .base {
+      background-color: #414141;
     }
+    .indicator {
+      left: 0;
+    }
+  }
+
+  .neutral {
+
+  }
 
   .indicator {
     display: block;
@@ -60,6 +71,7 @@
 import { makeToggleState } from "../../toggle";
 
 export default {
+  name: 'toggle',
   props: {
     id: {
       type: String,
@@ -74,14 +86,10 @@ export default {
   },
 
   beforeMount() {
-    this.toggle = makeToggleState({
-      id: this.id,
-      selected: undefined
-    })
-    this.toggle.onTransition((state) => {
-      this.style = state.context.position
+    const init = {id: this.id, selected: undefined}
+    this.toggle = makeToggleState(init, (state) => {
+      this.style = state.style
       this.$emit('change', state.context)
-      console.log(state.context)
     })
   }
 }

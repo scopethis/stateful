@@ -1,4 +1,4 @@
-import { Machine, assign } from "xstate";
+import { Machine, assign, interpret } from "xstate";
 
 const getPosition = (context, event) => {
   const selected = event.options || context.current;
@@ -20,66 +20,52 @@ const toggleItem = assign({
 const selectItem = assign({
   options: (context, event) => {
     const newOptions = JSON.parse(JSON.stringify(context.options));
-    event.options.forEach((option) => {
-      newOptions[option].selected = true;
+    const list = event.options || context.current
+    list.forEach((option) => {
+      const isSelected = newOptions[option].selected
+      newOptions[option].selected = isSelected ? false : true;
     });
     return newOptions;
   },
   current: (context, event) => {
     const newOptions = JSON.parse(JSON.stringify(context.options));
     const newCurrent = [];
+    const list = event.options || context.current
     newOptions.forEach((option, i) => {
-      const found = event.options.find((element) => {
+      const found = list.find((element) => {
         return element === i;
       });
       if (option.selected && !found) newCurrent.push(i);
     });
-    return [...newCurrent, ...event.options];
+    return [...newCurrent, ...list];
   }
 });
 
-const deSelectItem = assign({
-  options: (context, event) => {
-    const newOptions = JSON.parse(JSON.stringify(context.options));
-    event.options.forEach((option) => {
-      newOptions[option].selected = false;
-    });
-    return newOptions;
-  },
-  current: (context, event) => {
-    const newOptions = JSON.parse(JSON.stringify(context.options));
-    const newCurrent = [];
-    newOptions.forEach((option, i) => {
-      const found = event.options.find((element) => {
-        return element === i;
-      });
-      if (option.selected && !found) newCurrent.push(i);
-    });
-    return [...newCurrent];
-  }
-});
-
-export const options = (initialState) => {
+const options = (initialState) => {
   return {
     config: {
       id: "radio",
-      initial: "main",
+      initial: initialState.initial,
 
       context: {
         // properties with "_" at the start are IMMUTABLE
         _total: initialState.options.length,
-        _items: initialState.options,
-        options: initialState.options,
-        current: initialState.current
+        _items: JSON.parse(JSON.stringify(initialState.options)),
+        options: JSON.parse(JSON.stringify(initialState.options)),
+        current: JSON.parse(JSON.stringify(initialState.current))
       },
 
       states: {
-        main: {
-          entry: "toggleItem",
+        single: {
+          entry: ["toggleItem"],
           on: {
             TOGGLE: { actions: "toggleItem" },
-            SELECT: { actions: "selectItem" },
-            DESELECT: { actions: "deSelectItem" }
+          }
+        },
+        multiple: {
+          entry: ["selectItem"],
+          on: {
+            SELECT: { actions: "selectItem" }
           }
         }
       }
@@ -87,8 +73,7 @@ export const options = (initialState) => {
     options: {
       actions: {
         toggleItem,
-        selectItem,
-        deSelectItem
+        selectItem
       }
     }
   };
@@ -98,3 +83,16 @@ export const makeOptions = (initialState) => {
   const state = options(initialState);
   return Machine(state.config, state.options);
 };
+
+
+export const makeOptionsState = (initialState, callback) => {
+  const interpreter = interpret(makeOptions(initialState))
+  interpreter.onTransition(state => {
+    callback({
+      context: JSON.parse(JSON.stringify(state.context.options)), 
+      current: state.context.current
+    })
+  })
+  interpreter.start()
+  return {send: interpreter.send}
+}

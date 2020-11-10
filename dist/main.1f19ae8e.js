@@ -14167,8 +14167,18 @@ var makeToggle = function makeToggle(initialState) {
 
 exports.makeToggle = makeToggle;
 
-var makeToggleState = function makeToggleState(initialState) {
-  return (0, _xstate.interpret)(makeToggle(initialState)).start();
+var makeToggleState = function makeToggleState(initialState, callback) {
+  var interpreter = (0, _xstate.interpret)(makeToggle(initialState));
+  interpreter.onTransition(function (state) {
+    callback({
+      context: JSON.parse(JSON.stringify(state.context)),
+      style: state.context.position
+    });
+  });
+  interpreter.start();
+  return {
+    send: interpreter.send
+  };
 };
 
 exports.makeToggleState = makeToggleState;
@@ -14245,8 +14255,18 @@ var makeCheck = function makeCheck(initialState) {
 
 exports.makeCheck = makeCheck;
 
-var makeCheckState = function makeCheckState(initialState) {
-  return (0, _xstate.interpret)(makeCheck(initialState)).start();
+var makeCheckState = function makeCheckState(initialState, callback) {
+  var interpreter = (0, _xstate.interpret)(makeCheck(initialState));
+  interpreter.onTransition(function (state) {
+    callback({
+      context: JSON.parse(JSON.stringify(state.context)),
+      style: state.context.position
+    });
+  });
+  interpreter.start();
+  return {
+    send: interpreter.send
+  };
 };
 
 exports.makeCheckState = makeCheckState;
@@ -14664,11 +14684,12 @@ var _check = require("../../check");
 //
 //
 //
+//
 var _default = {
   name: 'checkbox',
   props: {
     id: {
-      type: String,
+      type: [String, Number],
       required: true
     }
   },
@@ -14680,14 +14701,17 @@ var _default = {
   beforeMount: function beforeMount() {
     var _this = this;
 
-    this.check = (0, _check.makeCheckState)({
+    var init = {
       id: this.id,
       selected: undefined
-    });
-    this.check.onTransition(function (state) {
-      _this.style = state.context.position;
+    };
+    this.check = (0, _check.makeCheckState)(init, function (state) {
+      _this.style = state.style;
 
-      _this.$emit('change', state.context);
+      _this.$emit('change', {
+        selected: state.context.selected,
+        id: _this.id
+      });
     });
   }
 };
@@ -14822,7 +14846,19 @@ var _toggle = require("../../toggle");
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 var _default = {
+  name: 'toggle',
   props: {
     id: {
       type: String,
@@ -14837,16 +14873,14 @@ var _default = {
   beforeMount: function beforeMount() {
     var _this = this;
 
-    this.toggle = (0, _toggle.makeToggleState)({
+    var init = {
       id: this.id,
       selected: undefined
-    });
-    this.toggle.onTransition(function (state) {
-      _this.style = state.context.position;
+    };
+    this.toggle = (0, _toggle.makeToggleState)(init, function (state) {
+      _this.style = state.style;
 
       _this.$emit('change', state.context);
-
-      console.log(state.context);
     });
   }
 };
@@ -14864,16 +14898,20 @@ exports.default = _default;
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
   return _c("div", { staticClass: "container", class: _vm.style }, [
-    _c("div", {
-      staticClass: "base",
-      on: {
-        click: function() {
-          return _vm.toggle.send("TOGGLE")
+    _c("div", { staticClass: "toggle" }, [
+      _c("div", {
+        staticClass: "base",
+        on: {
+          click: function() {
+            return _vm.toggle.send("TOGGLE")
+          }
         }
-      }
-    }),
+      }),
+      _vm._v(" "),
+      _c("span", { staticClass: "indicator" })
+    ]),
     _vm._v(" "),
-    _c("span", { staticClass: "indicator" })
+    _c("div", { staticClass: "label" }, [_vm._t("default")], 2)
   ])
 }
 var staticRenderFns = []
@@ -14909,7 +14947,327 @@ render._withStripped = true
       
       }
     })();
-},{"../../toggle":"../../toggle.js","_css_loader":"../../../../../../node_modules/parcel-bundler/src/builtins/css-loader.js","vue-hot-reload-api":"../../../../../../node_modules/vue-hot-reload-api/dist/index.js","vue":"../../../../../../node_modules/vue/dist/vue.runtime.esm.js"}],"main.vue":[function(require,module,exports) {
+},{"../../toggle":"../../toggle.js","_css_loader":"../../../../../../node_modules/parcel-bundler/src/builtins/css-loader.js","vue-hot-reload-api":"../../../../../../node_modules/vue-hot-reload-api/dist/index.js","vue":"../../../../../../node_modules/vue/dist/vue.runtime.esm.js"}],"../../options.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.makeOptionsState = exports.makeOptions = void 0;
+
+var _xstate = require("xstate");
+
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+var getPosition = function getPosition(context, event) {
+  var selected = event.options || context.current;
+  return selected > context._total ? context.current : selected;
+};
+
+var toggleItem = (0, _xstate.assign)({
+  options: function options(context, event) {
+    var newOptions = JSON.parse(JSON.stringify(context._items));
+    var position = getPosition(context, event);
+    newOptions[position].selected = !context.options[position].selected;
+    return newOptions;
+  },
+  current: function current(context, event) {
+    return getPosition(context, event);
+  }
+});
+var selectItem = (0, _xstate.assign)({
+  options: function options(context, event) {
+    var newOptions = JSON.parse(JSON.stringify(context.options));
+    var list = event.options || context.current;
+    list.forEach(function (option) {
+      var isSelected = newOptions[option].selected;
+      newOptions[option].selected = isSelected ? false : true;
+    });
+    return newOptions;
+  },
+  current: function current(context, event) {
+    var newOptions = JSON.parse(JSON.stringify(context.options));
+    var newCurrent = [];
+    var list = event.options || context.current;
+    newOptions.forEach(function (option, i) {
+      var found = list.find(function (element) {
+        return element === i;
+      });
+      if (option.selected && !found) newCurrent.push(i);
+    });
+    return [].concat(newCurrent, _toConsumableArray(list));
+  }
+});
+
+var options = function options(initialState) {
+  return {
+    config: {
+      id: "radio",
+      initial: initialState.initial,
+      context: {
+        // properties with "_" at the start are IMMUTABLE
+        _total: initialState.options.length,
+        _items: JSON.parse(JSON.stringify(initialState.options)),
+        options: JSON.parse(JSON.stringify(initialState.options)),
+        current: JSON.parse(JSON.stringify(initialState.current))
+      },
+      states: {
+        single: {
+          entry: ["toggleItem"],
+          on: {
+            TOGGLE: {
+              actions: "toggleItem"
+            }
+          }
+        },
+        multiple: {
+          entry: ["selectItem"],
+          on: {
+            SELECT: {
+              actions: "selectItem"
+            }
+          }
+        }
+      }
+    },
+    options: {
+      actions: {
+        toggleItem: toggleItem,
+        selectItem: selectItem
+      }
+    }
+  };
+};
+
+var makeOptions = function makeOptions(initialState) {
+  var state = options(initialState);
+  return (0, _xstate.Machine)(state.config, state.options);
+};
+
+exports.makeOptions = makeOptions;
+
+var makeOptionsState = function makeOptionsState(initialState, callback) {
+  var interpreter = (0, _xstate.interpret)(makeOptions(initialState));
+  interpreter.onTransition(function (state) {
+    callback({
+      context: JSON.parse(JSON.stringify(state.context.options)),
+      current: state.context.current
+    });
+  });
+  interpreter.start();
+  return {
+    send: interpreter.send
+  };
+};
+
+exports.makeOptionsState = makeOptionsState;
+},{"xstate":"../../../../../../node_modules/xstate/es/index.js"}],"option-single.vue":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+var _default = {
+  name: 'radio',
+  props: {
+    id: {
+      type: Number,
+      required: true
+    },
+    selected: {
+      type: Boolean,
+      required: false,
+      default: function _default() {
+        return false;
+      }
+    }
+  },
+  computed: {
+    style: function style() {
+      return this.selected ? 'active' : 'inactive';
+    }
+  }
+};
+exports.default = _default;
+        var $32f7c0 = exports.default || module.exports;
+      
+      if (typeof $32f7c0 === 'function') {
+        $32f7c0 = $32f7c0.options;
+      }
+    
+        /* template */
+        Object.assign($32f7c0, (function () {
+          var render = function() {
+  var _vm = this
+  var _h = _vm.$createElement
+  var _c = _vm._self._c || _h
+  return _c("div", { staticClass: "container", class: _vm.style }, [
+    _c("input", {
+      attrs: { type: "radio" },
+      domProps: { checked: _vm.selected }
+    }),
+    _vm._v(" "),
+    _c(
+      "div",
+      {
+        staticClass: "toggle",
+        on: {
+          click: function($event) {
+            return _vm.$emit("click", { id: _vm.id })
+          }
+        }
+      },
+      [
+        _c("div", { staticClass: "border" }),
+        _vm._v(" "),
+        _c("span", { staticClass: "base" }),
+        _vm._v(" "),
+        _c("span", { staticClass: "indicator" })
+      ]
+    ),
+    _vm._v(" "),
+    _c("div", { staticClass: "label" }, [_vm._t("default")], 2)
+  ])
+}
+var staticRenderFns = []
+render._withStripped = true
+
+          return {
+            render: render,
+            staticRenderFns: staticRenderFns,
+            _compiled: true,
+            _scopeId: "data-v-32f7c0",
+            functional: undefined
+          };
+        })());
+      
+    /* hot reload */
+    (function () {
+      if (module.hot) {
+        var api = require('vue-hot-reload-api');
+        api.install(require('vue'));
+        if (api.compatible) {
+          module.hot.accept();
+          if (!module.hot.data) {
+            api.createRecord('$32f7c0', $32f7c0);
+          } else {
+            api.reload('$32f7c0', $32f7c0);
+          }
+        }
+
+        
+        var reloadCSS = require('_css_loader');
+        module.hot.dispose(reloadCSS);
+        module.hot.accept(reloadCSS);
+      
+      }
+    })();
+},{"_css_loader":"../../../../../../node_modules/parcel-bundler/src/builtins/css-loader.js","vue-hot-reload-api":"../../../../../../node_modules/vue-hot-reload-api/dist/index.js","vue":"../../../../../../node_modules/vue/dist/vue.runtime.esm.js"}],"option-multi.vue":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -14917,9 +15275,168 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 
-var _check = _interopRequireDefault(require("./check"));
+var _check = require("../../check");
 
-var _toggle = _interopRequireDefault(require("./toggle"));
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+var _default = {
+  name: 'checkbox',
+  props: {
+    id: {
+      type: [String, Number],
+      required: true
+    },
+    selected: {
+      type: Boolean,
+      required: false,
+      default: function _default() {
+        return false;
+      }
+    }
+  },
+  computed: {
+    style: function style() {
+      return this.selected ? 'active' : 'inactive';
+    }
+  }
+};
+exports.default = _default;
+        var $8bd108 = exports.default || module.exports;
+      
+      if (typeof $8bd108 === 'function') {
+        $8bd108 = $8bd108.options;
+      }
+    
+        /* template */
+        Object.assign($8bd108, (function () {
+          var render = function() {
+  var _vm = this
+  var _h = _vm.$createElement
+  var _c = _vm._self._c || _h
+  return _c("div", { staticClass: "check", class: _vm.style }, [
+    _c("div", [
+      _c("input", {
+        attrs: { type: "checkbox" },
+        on: {
+          click: function($event) {
+            return _vm.$emit("click", { id: _vm.id })
+          }
+        }
+      }),
+      _vm._v(" "),
+      _c("div", { staticClass: "inner" })
+    ]),
+    _vm._v(" "),
+    _c("div", { staticClass: "label" }, [_vm._t("default")], 2)
+  ])
+}
+var staticRenderFns = []
+render._withStripped = true
+
+          return {
+            render: render,
+            staticRenderFns: staticRenderFns,
+            _compiled: true,
+            _scopeId: "data-v-8bd108",
+            functional: undefined
+          };
+        })());
+      
+    /* hot reload */
+    (function () {
+      if (module.hot) {
+        var api = require('vue-hot-reload-api');
+        api.install(require('vue'));
+        if (api.compatible) {
+          module.hot.accept();
+          if (!module.hot.data) {
+            api.createRecord('$8bd108', $8bd108);
+          } else {
+            api.reload('$8bd108', $8bd108);
+          }
+        }
+
+        
+        var reloadCSS = require('_css_loader');
+        module.hot.dispose(reloadCSS);
+        module.hot.accept(reloadCSS);
+      
+      }
+    })();
+},{"../../check":"../../check.js","_css_loader":"../../../../../../node_modules/parcel-bundler/src/builtins/css-loader.js","vue-hot-reload-api":"../../../../../../node_modules/vue-hot-reload-api/dist/index.js","vue":"../../../../../../node_modules/vue/dist/vue.runtime.esm.js"}],"options.vue":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _options = require("../../options");
+
+var _optionSingle = _interopRequireDefault(require("./option-single"));
+
+var _optionMulti = _interopRequireDefault(require("./option-multi"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -14934,14 +15451,209 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 //
 //
 //
+//
+//
+//
+//
+//
 var _default = {
+  name: 'options',
+  props: {
+    id: {
+      type: String,
+      required: true
+    },
+    options: {
+      type: Object,
+      required: true
+    },
+    type: {
+      type: String,
+      required: false,
+      default: function _default() {
+        return 'single';
+      },
+      validator: function validator(value) {
+        return ['single', 'multiple'].indexOf(value) !== -1;
+      }
+    }
+  },
+  data: function data() {
+    return {
+      // To avoid prop mutating
+      private_options: []
+    };
+  },
+  watch: {
+    options: {
+      handler: function handler(options) {
+        var _this = this;
+
+        var init = Object.assign({
+          initial: this.type
+        }, options);
+        this.chooser = (0, _options.makeOptionsState)(init, function (state) {
+          _this.private_options = state.context;
+
+          _this.$emit('change', state);
+        });
+      },
+      immediate: true
+    }
+  },
+  computed: {
+    button: function button() {
+      return this.type === 'single' ? _optionSingle.default : _optionMulti.default;
+    },
+    eventType: function eventType() {
+      return this.type === 'single' ? 'TOGGLE' : 'SELECT';
+    }
+  },
+  components: {
+    radio: _optionSingle.default,
+    check: _optionMulti.default
+  }
+};
+exports.default = _default;
+        var $76db47 = exports.default || module.exports;
+      
+      if (typeof $76db47 === 'function') {
+        $76db47 = $76db47.options;
+      }
+    
+        /* template */
+        Object.assign($76db47, (function () {
+          var render = function() {
+  var _vm = this
+  var _h = _vm.$createElement
+  var _c = _vm._self._c || _h
+  return _c(
+    "div",
+    { staticClass: "container" },
+    _vm._l(_vm.private_options, function(choice, key) {
+      return _c(
+        _vm.button,
+        {
+          key: key,
+          tag: "component",
+          attrs: { id: key, selected: choice.selected },
+          on: {
+            click: function($event) {
+              return _vm.chooser.send(_vm.eventType, { options: [$event.id] })
+            }
+          }
+        },
+        [_vm._v("\n    " + _vm._s(choice.label) + "\n  ")]
+      )
+    }),
+    1
+  )
+}
+var staticRenderFns = []
+render._withStripped = true
+
+          return {
+            render: render,
+            staticRenderFns: staticRenderFns,
+            _compiled: true,
+            _scopeId: "data-v-76db47",
+            functional: undefined
+          };
+        })());
+      
+    /* hot reload */
+    (function () {
+      if (module.hot) {
+        var api = require('vue-hot-reload-api');
+        api.install(require('vue'));
+        if (api.compatible) {
+          module.hot.accept();
+          if (!module.hot.data) {
+            api.createRecord('$76db47', $76db47);
+          } else {
+            api.reload('$76db47', $76db47);
+          }
+        }
+
+        
+        var reloadCSS = require('_css_loader');
+        module.hot.dispose(reloadCSS);
+        module.hot.accept(reloadCSS);
+      
+      }
+    })();
+},{"../../options":"../../options.js","./option-single":"option-single.vue","./option-multi":"option-multi.vue","_css_loader":"../../../../../../node_modules/parcel-bundler/src/builtins/css-loader.js","vue-hot-reload-api":"../../../../../../node_modules/vue-hot-reload-api/dist/index.js","vue":"../../../../../../node_modules/vue/dist/vue.runtime.esm.js"}],"main.vue":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _check = _interopRequireDefault(require("./check"));
+
+var _toggle = _interopRequireDefault(require("./toggle"));
+
+var _options = _interopRequireDefault(require("./options"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+var _default = {
+  name: 'App',
   components: {
     checkbox: _check.default,
-    toggle: _toggle.default
+    toggle: _toggle.default,
+    options: _options.default
+  },
+  data: function data() {
+    return {
+      choices: {
+        current: [1],
+        options: [{
+          label: "England",
+          selected: false
+        }, {
+          label: "Scotland",
+          selected: false
+        }, {
+          label: "Wales",
+          selected: false
+        }, {
+          label: "Ireland",
+          selected: false
+        }, {
+          label: "France",
+          selected: false
+        }, {
+          label: "Italy",
+          selected: false
+        }]
+      }
+    };
   },
   methods: {
-    onCheck: function onCheck(event) {
-      console.log(event);
+    onOption: function onOption(event) {},
+    onCheck: function onCheck(event) {// console.log(event)
+    },
+    onToggle: function onToggle(event) {// console.log(event)
     }
   }
 };
@@ -14975,7 +15687,16 @@ exports.default = _default;
       _vm._v(" "),
       _c("h2", [_vm._v("2. Toggle")]),
       _vm._v(" "),
-      _c("toggle", { attrs: { id: "alerts" } })
+      _c("toggle", { attrs: { id: "alerts" }, on: { change: _vm.onToggle } }, [
+        _vm._v("Send alerts")
+      ]),
+      _vm._v(" "),
+      _c("h2", [_vm._v("3. Options")]),
+      _vm._v(" "),
+      _c("options", {
+        attrs: { id: "club", options: _vm.choices, type: "multiple" },
+        on: { change: _vm.onOption }
+      })
     ],
     1
   )
@@ -15009,7 +15730,7 @@ render._withStripped = true
         
       }
     })();
-},{"./check":"check.vue","./toggle":"toggle.vue","vue-hot-reload-api":"../../../../../../node_modules/vue-hot-reload-api/dist/index.js","vue":"../../../../../../node_modules/vue/dist/vue.runtime.esm.js"}],"main.js":[function(require,module,exports) {
+},{"./check":"check.vue","./toggle":"toggle.vue","./options":"options.vue","vue-hot-reload-api":"../../../../../../node_modules/vue-hot-reload-api/dist/index.js","vue":"../../../../../../node_modules/vue/dist/vue.runtime.esm.js"}],"main.js":[function(require,module,exports) {
 "use strict";
 
 var _vue = _interopRequireDefault(require("vue"));
@@ -15053,7 +15774,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "53389" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "55558" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

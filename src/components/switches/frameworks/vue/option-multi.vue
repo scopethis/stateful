@@ -2,7 +2,7 @@
     <div class="check" :class="style">
       <div>
         <input type="checkbox" 
-        @click="$event => check.send('TOGGLE')" />
+        @click="$event => $emit('click', {id})" />
         <div class="inner"></div>
       </div>
       <div class="label"><slot /></div>
@@ -71,25 +71,20 @@ export default {
     id: {
       type: [String, Number],
       required: true
+    },
+    selected: {
+      type: Boolean,
+      required: false,
+      default: () => {
+        return false
+      }
     }
   },
 
-  data () {
-    return {
-      style: '',
+  computed: {
+    style() {
+      return this.selected ? 'active' : 'inactive'
     }
   },
-
-
-  beforeMount() {
-    const init = {id: this.id, selected: undefined}
-    this.check = makeCheckState(init, (state) => {
-      this.style = state.style
-      this.$emit('change', {
-        selected: state.context.selected,
-        id: this.id
-      })
-    })
-  }
 };
 </script>
