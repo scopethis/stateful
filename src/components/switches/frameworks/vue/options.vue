@@ -22,11 +22,6 @@ import check from "./option-multi"
 export default {
   name: 'options',
   props: {
-    id: {
-      type: String,
-      required: true
-    },
-
     options: {
       type: Object,
       required: true

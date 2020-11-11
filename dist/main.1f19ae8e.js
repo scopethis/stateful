@@ -15459,10 +15459,6 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var _default = {
   name: 'options',
   props: {
-    id: {
-      type: String,
-      required: true
-    },
     options: {
       type: Object,
       required: true
@@ -15616,6 +15612,12 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 //
 //
 //
+//
+//
+//
+//
+//
+//
 var _default = {
   name: 'App',
   components: {
@@ -15691,10 +15693,17 @@ exports.default = _default;
         _vm._v("Send alerts")
       ]),
       _vm._v(" "),
-      _c("h2", [_vm._v("3. Options")]),
+      _c("h2", [_vm._v("3. Options multiple")]),
       _vm._v(" "),
       _c("options", {
-        attrs: { id: "club", options: _vm.choices, type: "multiple" },
+        attrs: { options: _vm.choices, type: "multiple" },
+        on: { change: _vm.onOption }
+      }),
+      _vm._v(" "),
+      _c("h2", [_vm._v("4. Options single")]),
+      _vm._v(" "),
+      _c("options", {
+        attrs: { options: _vm.choices, type: "single" },
         on: { change: _vm.onOption }
       })
     ],

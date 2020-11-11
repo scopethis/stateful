@@ -7,11 +7,17 @@
       <h2>2. Toggle</h2>
       <toggle @change="onToggle" id="alerts">Send alerts</toggle>
 
-      <h2>3. Options</h2>
+      <h2>3. Options multiple</h2>
       <options @change="onOption"
-        id="club"
         :options="choices"
-        type="multiple"></options>
+        type="multiple">
+      </options>
+
+      <h2>4. Options single</h2>
+      <options @change="onOption"
+        :options="choices"
+        type="single">
+      </options>
     </div>
 </template>
 
