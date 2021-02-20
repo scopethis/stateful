@@ -1,0 +1,70 @@
+@import '../../../../../src/styles/typography';
+
+$padding: 4px;
+
+.field {
+  display: inline-block;
+}
+
+input {
+  @include fontStack();
+  @include defaultFontSize();
+  color: #636668;
+  background-color: #efefef;
+  border: none;
+  padding: $padding;
+  display: inline-block;
+  width: auto;
+  min-width: 100px;
+  grid-area: 1;
+}
+
+.errors {
+  background-color: #ffffff;
+  box-shadow: 2px 2px 2px #d5d2d2;
+  border-left: 2px solid rgb(252, 202, 202); 
+  padding: 10px;
+  display: none;
+}
+
+.error-message {
+  position: relative;
+  padding-left: 25px
+}
+
+i {
+  @include materialIcons();
+  position: absolute;
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+  margin: auto;
+  pointer-events: none;
+  color: #ff6e6e;
+  left: -6px;
+  top: -3px;
+}
+
+.field.invalid {
+  input {
+    background-color: #fccaca;
+  }
+  .errors {
+    display: block;
+  }
+}
+
+input:focus {
+  outline: none;
+  background-color: #eaf7f9;
+}
+
+.wrapper {
+  display: inline-grid;
+  height: 28px;
+
+  &:after {
+    content: attr(data-value) ' ';
+    visibility: hidden;
+  }
+}

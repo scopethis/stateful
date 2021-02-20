@@ -1,6 +1,7 @@
 <template>
   <div class="container">
     <component :is="button" v-for="(choice, key) in private_options"
+      class="option"
       @click="$event => chooser.send(eventType, {options: [$event.id]})"
       :key="key"
       :id="key"
@@ -11,7 +12,12 @@
 </template>
 
 <style scoped lang="scss">
-
+  .option {
+    margin-bottom: 5px;
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
 </style>
 
 <script>

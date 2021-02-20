@@ -11,20 +11,7 @@ const options = [
   { label: "Italy", selected: false }
 ];
 
-const valid1 = (content) => {
-  return true;
-};
 
-const valid2 = (content) => {
-  return false;
-};
-
-const machine = makeText({
-  validators: [
-    { id: "valid1", validate: valid1 },
-    { id: "valid2", validate: valid2 }
-  ]
-});
 
 const machineState = interpret(machine).onTransition((state) =>
   console.log(state.toStrings(), state.context)

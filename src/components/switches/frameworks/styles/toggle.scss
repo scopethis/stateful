@@ -1,0 +1,62 @@
+@import '../../../../../src/styles/typography';
+
+$size: 20px;
+
+.container {
+  @include fontStack();
+  @include defaultFontSize();
+  display: flex;
+}
+
+.label {
+  margin-left: 10px;
+  color: #636668;
+}
+
+.toggle {
+  position: relative;
+  width: 40px;
+}
+
+.base {
+  width: inherit;
+  height: $size;
+  background-color: lightgray;
+  border-radius: $size;
+}
+
+.active {
+  .base {
+    background-color: #00c95a;
+  }
+  .indicator {
+    left: 40px - $size;
+  }
+}
+
+.inactive {
+  .base {
+    background-color: lightgray;
+  }
+  .indicator {
+    left: 0;
+  }
+}
+
+.neutral {
+
+}
+
+.indicator {
+  display: block;
+  width: $size - 4;
+  height: $size - 4;
+  background-color: #ffffff;
+  border-radius: 50%;
+  position: absolute;
+  left: 0; top: 0;
+  margin-left: 2px;
+  margin-right: 2px;
+  margin-top: 2px;
+  transition: left 0.2s;
+}

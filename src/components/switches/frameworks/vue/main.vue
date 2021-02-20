@@ -2,6 +2,7 @@
     <div>
       <h2>1. Checkbox</h2>
       <checkbox @change="onCheck" id="france">France</checkbox>
+      <div style="height: 5px"></div>
       <checkbox @change="onCheck" id="england">England</checkbox>
 
       <h2>2. Toggle</h2>
@@ -54,12 +55,13 @@ export default {
 
   methods: {
     onOption (event) {
+
     },
     onCheck (event) {
-      // console.log(event)
+
     },
     onToggle (event) {
-      // console.log(event)
+      
     }
   }
 };
